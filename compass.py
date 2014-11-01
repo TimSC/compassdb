@@ -1,6 +1,6 @@
 
 import msgpack, copy, uuid, os
-import slippytiles
+import slippytiles, tileencoding
 
 class GisObj(object):
 	def __init__(self):
@@ -33,7 +33,7 @@ class TileBranch(object):
 		fina = pth + "tile.dat"
 		fi = open(fina, "wb")
 
-		fi.write("stuff")
+		tileencoding.WriteTile(fi)
 
 		fi.close()
 
