@@ -1,5 +1,6 @@
 
-import msgpack, copy
+import msgpack, copy, uuid
+import slippytiles
 
 class GisObj(object):
 	def __init__(self):
@@ -11,9 +12,13 @@ class Tile(object):
 	def __init__(self, x, y, zoom):
 		self.tileId = (x, y, zoom)
 
+	def Commit(self, mapObj, commitUuid):
+		print "Committing to {0}, {1}, {2}".format(*self.tileId)
+
 class Map(object):
 	def __init__(self):
 		self._objs = []
+		self.nativeZoom = 12
 
 	def Copy(self):
 		return copy.deepcopy(self)
@@ -21,18 +26,33 @@ class Map(object):
 	def AddGisObj(self, gisObj):
 		self._objs.append(gisObj)
 
-class Branch(object):
+	def WithinTiles(self):
+		out = set()
+		for obj in self._objs:
+			for pos in obj.positions:
+				tilex, tiley = slippytiles.deg2num(pos[0], pos[1], self.nativeZoom)
+				out.add((tilex, tiley, self.nativeZoom))
+		return out
+
+class TileManager(object):
 	def __init__(self):
 		pass
 
-	def Commit(self, mapObjs):
-		pass
+	def Commit(self, mapObj):
+		#Check which tiles are referenced
+		withinTiles = mapObj.WithinTiles()
+		print withinTiles
+
+		commitUuid = uuid.uuid4()
+
+		for tilex, tiley, zoom in withinTiles:
+			tile = Tile(tilex, tiley, zoom)
+			tile.Commit(mapObj, commitUuid)
 
 if __name__ == "__main__":
-	
-	branch = Branch()
 
 	sharedPoint = (51.24762292031704, -0.590133572441356)
+	currentMap = Map()
 
 	longWay = [(51.25625276724307, -0.5569565354674175),
 		(51.25266853326553, -0.5610435318131136),
@@ -96,9 +116,10 @@ if __name__ == "__main__":
 
 	point = (51.24109091450995, -0.5899589570782465)
 	pointObj = GisObj()
-	pointObj.positions = point
+	pointObj.positions = [point]
 	pointObj.tags = {"type": "single point"}
 	currentMap.AddGisObj(pointObj)
-	
-	branch.Commit(currentMap)
+		
+	tileManager = TileManager()
+	tileManager.Commit(currentMap)
 
