@@ -1,5 +1,5 @@
 
-import msgpack, copy, uuid
+import msgpack, copy, uuid, os
 import slippytiles
 
 class GisObj(object):
@@ -8,12 +8,35 @@ class GisObj(object):
 		tags = {}
 		children = []
 
-class Tile(object):
+class TileBranch(object):
 	def __init__(self, x, y, zoom):
 		self.tileId = (x, y, zoom)
 
+
 	def Commit(self, mapObj, commitUuid):
-		print "Committing to {0}, {1}, {2}".format(*self.tileId)
+		print "Committing to tile {0}, {1}, {2}".format(*self.tileId)
+
+		#Filter objects to find what is in this tile
+		objsWithin = mapObj.GetObjsWithinTile(*self.tileId)
+		print "Num objects in tile", len(objsWithin)
+
+		#Save to file
+		pth = "tiles"
+		if not os.path.exists(pth):
+			os.mkdir(pth)
+		pth += "/{0}".format(self.tileId[0])
+		if not os.path.exists(pth):
+			os.mkdir(pth)
+		pth += "/{0}".format(self.tileId[1])
+		if not os.path.exists(pth):
+			os.mkdir(pth)
+		fina = pth + "tile.dat"
+		fi = open(fina, "wb")
+
+		fi.write("stuff")
+
+		fi.close()
+
 
 class Map(object):
 	def __init__(self):
@@ -34,6 +57,26 @@ class Map(object):
 				out.add((tilex, tiley, self.nativeZoom))
 		return out
 
+	def GetObjsWithinTile(self, x, y, zoom):
+		nwCorner = slippytiles.num2deg(x, y, zoom)
+		seCorner = slippytiles.num2deg(x+1, y+1, zoom)
+		print nwCorner, seCorner
+
+		outFiltered = []
+		count = 0
+		for obj in self._objs:
+			within = False
+			for pos in obj.positions:
+				if pos[0] < seCorner[0] or pos[0] >= nwCorner[0]: continue
+				if pos[1] < nwCorner[1] or pos[1] >= seCorner[1]: continue
+				within = True
+				break
+			if within:
+				outFiltered.append(obj)
+
+			count += 1
+		return outFiltered
+
 class TileManager(object):
 	def __init__(self):
 		pass
@@ -46,7 +89,7 @@ class TileManager(object):
 		commitUuid = uuid.uuid4()
 
 		for tilex, tiley, zoom in withinTiles:
-			tile = Tile(tilex, tiley, zoom)
+			tile = TileBranch(tilex, tiley, zoom)
 			tile.Commit(mapObj, commitUuid)
 
 if __name__ == "__main__":
