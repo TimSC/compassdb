@@ -30,7 +30,7 @@ class TileBranch(object):
 		pth += "/{0}".format(self.tileId[1])
 		if not os.path.exists(pth):
 			os.mkdir(pth)
-		fina = pth + "tile.dat"
+		fina = pth + "/tile.dat"
 		fi = open(fina, "wb")
 
 		tileencoding.WriteTile(objsWithin, fi)

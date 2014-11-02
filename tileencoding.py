@@ -1,5 +1,5 @@
 
-import msgpack
+import msgpack, zlib
 
 def WriteTile(objs, fi):
 	data = []
@@ -42,7 +42,8 @@ def WriteTile(objs, fi):
 	
 		modObjs.append((posList, obj.tags, obj.children))
 
-	print "sharedNodesData", sharedNodesData
 	encoded = msgpack.packb((sharedNodesData, modObjs))
-	print len(encoded)
+	encodedCompressed = zlib.compress(encoded)
+
+	fi.write(encodedCompressed)
 
