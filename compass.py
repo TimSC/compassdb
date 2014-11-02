@@ -1,17 +1,16 @@
 
-import msgpack, copy, uuid, os
+import copy, uuid, os
 import slippytiles, tileencoding
 
 class GisObj(object):
 	def __init__(self):
-		positions = []
-		tags = {}
-		children = []
+		self.positions = []
+		self.tags = {}
+		self.children = []
 
 class TileBranch(object):
 	def __init__(self, x, y, zoom):
 		self.tileId = (x, y, zoom)
-
 
 	def Commit(self, mapObj, commitUuid):
 		print "Committing to tile {0}, {1}, {2}".format(*self.tileId)
@@ -19,6 +18,7 @@ class TileBranch(object):
 		#Filter objects to find what is in this tile
 		objsWithin = mapObj.GetObjsWithinTile(*self.tileId)
 		print "Num objects in tile", len(objsWithin)
+		print map(id, objsWithin)
 
 		#Save to file
 		pth = "tiles"
@@ -33,10 +33,9 @@ class TileBranch(object):
 		fina = pth + "tile.dat"
 		fi = open(fina, "wb")
 
-		tileencoding.WriteTile(fi)
+		tileencoding.WriteTile(objsWithin, fi)
 
 		fi.close()
-
 
 class Map(object):
 	def __init__(self):
@@ -137,7 +136,7 @@ if __name__ == "__main__":
 		(51.247963465642414, -0.5703315163757717)]
 
 	shortWayObj = GisObj()
-	shortWayObj.positions = longWay
+	shortWayObj.positions = shortway
 	shortWayObj.tags = {"type": "short way"}
 	currentMap.AddGisObj(shortWayObj)
 
