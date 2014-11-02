@@ -37,6 +37,22 @@ class TileBranch(object):
 
 		fi.close()
 
+	def Fetch(self, mapData):
+		print "Fetching tile {0}, {1}, {2}".format(*self.tileId)
+
+		pth = "tiles"
+		pth += "/{0}".format(self.tileId[0])
+		pth += "/{0}".format(self.tileId[1])
+		fina = pth + "/tile.dat"
+		fi = open(fina, "rb")
+
+		tileObjs = tileencoding.ReadTile(fi)
+		print len(tileObjs)
+
+		#Merge tile objects into map data
+		mapData._objs.extend(tileObjs)
+
+
 class Map(object):
 	def __init__(self):
 		self._objs = []
@@ -91,7 +107,14 @@ class TileManager(object):
 			tile = TileBranch(tilex, tiley, zoom)
 			tile.Commit(mapObj, commitUuid)
 
-if __name__ == "__main__":
+	def GetTiles(self, tileIds):
+		mapData = Map()
+		for tilex, tiley in tileIds:
+			tile = TileBranch(tilex, tiley, 12)
+			tile.Fetch(mapData)
+		return mapData
+
+def TestEdit1():
 
 	sharedPoint = (51.24762292031704, -0.590133572441356)
 	currentMap = Map()
@@ -164,4 +187,18 @@ if __name__ == "__main__":
 		
 	tileManager = TileManager()
 	tileManager.Commit(currentMap)
+
+def ReadEdit1():
+	tileManager = TileManager()
+	mapData = tileManager.GetTiles([(2041, 1366)])
+	for obj in mapData._objs:
+		print "tags", obj.tags
+		print "positions"
+		for pos in obj.positions:
+			print id(pos)
+
+if __name__ == "__main__":
+
+	TestEdit1()
+	ReadEdit1()
 

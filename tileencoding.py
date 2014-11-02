@@ -1,5 +1,6 @@
 
 import msgpack, zlib
+import compass
 
 def WriteTile(objs, fi):
 	data = []
@@ -47,3 +48,27 @@ def WriteTile(objs, fi):
 
 	fi.write(encodedCompressed)
 
+def ReadTile(fi):
+
+	encoded = zlib.decompress(fi.read())	
+	data = msgpack.unpackb(encoded)	
+
+	sharedNodes = data[0]
+	objs = data[1]
+
+	objsOut = []
+	for obj in objs:
+		tmpObj = compass.GisObj()
+		for pos in obj[0]:
+			try:
+				iterator = iter(pos)
+			except TypeError:
+				tmpObj.positions.append(sharedNodes[pos])
+			else:
+				tmpObj.positions.append(pos)
+
+		tmpObj.tags = obj[1]
+		tmpObj.children = obj[2]
+		objsOut.append(tmpObj)
+
+	return objsOut
