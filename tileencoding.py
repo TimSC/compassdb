@@ -1,5 +1,5 @@
 
-import msgpack, zlib
+import msgpack, zlib, uuid, struct
 import compass
 
 def WriteTile(objs, fi):
@@ -41,7 +41,11 @@ def WriteTile(objs, fi):
 			else:
 				posList.append(sharedNodesPid[pid])
 	
-		modObjs.append((posList, obj.tags, obj.children))
+		uuidBytes = None
+		if obj.uuid is not None:
+			uuidBytes = obj.uuid.bytes
+
+		modObjs.append({'p':posList, 't':obj.tags, 'c':obj.children, 'u':uuidBytes})
 
 	encoded = msgpack.packb((sharedNodesData, modObjs))
 	encodedCompressed = zlib.compress(encoded)
@@ -56,10 +60,15 @@ def ReadTile(fi):
 	sharedNodes = data[0]
 	objs = data[1]
 
+	#Iterate over shared objects
+	for node in sharedNodes:
+		pass
+
+	#Iterate over objects
 	objsOut = []
 	for obj in objs:
 		tmpObj = compass.GisObj()
-		for pos in obj[0]:
+		for pos in obj['p']:
 			try:
 				iterator = iter(pos)
 			except TypeError:
@@ -67,8 +76,13 @@ def ReadTile(fi):
 			else:
 				tmpObj.positions.append(pos)
 
-		tmpObj.tags = obj[1]
-		tmpObj.children = obj[2]
+		tmpObj.tags = obj['t']
+		tmpObj.children = obj['c']
+		if obj['u'] is not None:
+			tmpObj.uuid = uuid.UUID(bytes=obj['u'])
+		else:
+			tmpObj.uuid = None
 		objsOut.append(tmpObj)
 
 	return objsOut
+

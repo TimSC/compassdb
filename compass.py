@@ -7,6 +7,7 @@ class GisObj(object):
 		self.positions = []
 		self.tags = {}
 		self.children = []
+		self.uuid = None
 
 class TileBranch(object):
 	def __init__(self, x, y, zoom):
@@ -19,6 +20,17 @@ class TileBranch(object):
 		objsWithin = mapObj.GetObjsWithinTile(*self.tileId)
 		print "Num objects in tile", len(objsWithin)
 		print map(id, objsWithin)
+
+		#Identify shared nodes
+		countRefs = {}
+		for obj in objsWithin:
+			for pos in obj.positions:
+				pid = id(pos)
+				if pid not in countRefs:
+					countRefs[pid] = 0
+				countRefs[pid] += 1				
+
+		print countRefs	
 
 		#Save to file
 		pth = "tiles"
@@ -92,6 +104,29 @@ class Map(object):
 			count += 1
 		return outFiltered
 
+	def AssignUuids(self):
+		#Count how many tiles object crosses
+		objToTileMap = {}
+		for obj in self._objs:
+			objInTiles = set()
+			for pos in obj.positions:
+				tilex, tiley = slippytiles.deg2num(pos[0], pos[1], self.nativeZoom)
+				objInTiles.add((tilex, tiley))
+			objToTileMap[obj] = objInTiles
+
+		#Assign uuid to any cross tile object that has none already
+		for obj in objToTileMap:
+			objInTiles = objToTileMap[obj]
+			count = len(objInTiles)
+			if count <= 1: continue
+
+			#Object is indeed in multiple tiles
+			if obj.uuid is not None:
+				continue #Already has a uuid
+
+			obj.uuid = uuid.uuid4()
+			#print "Assigning uuid", obj.uuid
+
 class TileManager(object):
 	def __init__(self):
 		pass
@@ -103,6 +138,10 @@ class TileManager(object):
 
 		commitUuid = uuid.uuid4()
 
+		#Assign uuids to new objects that cross tiles
+		mapObj.AssignUuids()
+
+		#Commit to tile branches
 		for tilex, tiley, zoom in withinTiles:
 			tile = TileBranch(tilex, tiley, zoom)
 			tile.Commit(mapObj, commitUuid)
@@ -191,11 +230,12 @@ def TestEdit1():
 def ReadEdit1():
 	tileManager = TileManager()
 	mapData = tileManager.GetTiles([(2041, 1366)])
-	for obj in mapData._objs:
-		print "tags", obj.tags
-		print "positions"
-		for pos in obj.positions:
-			print id(pos)
+	if 0:
+		for obj in mapData._objs:
+			print "tags", obj.tags
+			print "positions"
+			for pos in obj.positions:
+				print id(pos), pos
 
 if __name__ == "__main__":
 
